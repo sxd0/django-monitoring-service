@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from monitoring import views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/server/<int:server_id>/status/', views.mock_server_status, name='mock_server_status'),
 ]

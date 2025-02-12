@@ -1,36 +1,57 @@
 import requests
 from celery import shared_task
-from django.utils.timezone import now
 from datetime import timedelta
-from .models import Incident
-import psutil
+from .models import Incident, ServerResource
 from celery import shared_task
-from .models import ServerMetric, Incident
+from .models import Incident
+from django.utils import timezone
 
 @shared_task
-def fetch_and_store_metrics():
-    cpu = psutil.cpu_percent(interval=1)
-    memory = psutil.virtual_memory().percent
-    disk = psutil.disk_usage('/').percent
+def fetch_server_data():
+    for server_id in range(1, 31):#30 серверов
+        try:
+            response = requests.get(f'http://127.0.0.1:8000/api/server/{server_id}/status/', timeout=10)
+            if response.status_code != 200:
+                print(f"Failed to fetch data for server {server_id}: {response.status_code}")
+                continue
 
-    metric = ServerMetric.objects.create(cpu_load=cpu, memory_usage=memory, disk_usage=disk)
-    
-    monitor_resources(metric.pk)
-
-    return f"Metrics recorded: CPU={cpu}, Memory={memory}, Disk={disk}"
+            data = response.json()
+            ServerResource.objects.create(
+                server_id=server_id,
+                cpu=data.get('cpu', 0),
+                mem=float(data.get('mem', '0').strip('%')),
+                disk=float(data.get('disk', '0').strip('%')),
+                uptime=data.get('uptime', '')
+            )
+        except Exception as e:
+            print(f"Error fetching data for server {server_id}: {e}")
 
 @shared_task
-def monitor_resources(metric_id):
-    metric = ServerMetric.objects.get(pk=metric_id)
-    
-    if metric.cpu_load > 85:
-        Incident.objects.create(issue=f"CPU > 85%  : {metric.cpu_load}%")
-    if metric.memory_usage > 90:
-        Incident.objects.create(issue=f"Memory > 90%  : {metric.memory_usage}%")
-    if metric.disk_usage > 95:
-        Incident.objects.create(issue=f"Disk > 95%  : {metric.disk_usage}%")
+def monitor_resources():
+    now = timezone.now()
+    for server_id in range(1, 31):#30 серверов
+        recent_data = ServerResource.objects.filter(server_id=server_id, timestamp__gte=now - timedelta(minutes=30))
+        if recent_data.filter(cpu__gt=85).count() >= 2:
+            Incident.objects.create(
+                server_id=server_id,
+                issue_type='CPU',
+                description='CPU usage exceeded 85% for 30 minutes'
+            )
 
-    return "Monitoring complete"
+        if recent_data.filter(mem__gt=90).count() >= 2:
+            Incident.objects.create(
+                server_id=server_id,
+                issue_type='Mem',
+                description='Memory usage exceeded 90% for 30 minutes'
+            )
+            
+        disk_data = ServerResource.objects.filter(server_id=server_id, timestamp__gte=now - timedelta(hours=2))
+        if disk_data.filter(disk__gt=95).count() >= 8:
+            Incident.objects.create(
+                server_id=server_id,
+                issue_type='Disk',
+                description='Disk usage exceeded 95% for 2 hours'
+            )
 
 
 

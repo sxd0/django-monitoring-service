@@ -1,21 +1,26 @@
 from django.db import models
 
-class ServerMetric(models.Model): #хранит в себе собранные метрики
+
+
+class ServerResource(models.Model): #хранение данных нагрузка
+    server_id = models.IntegerField()
+    cpu = models.FloatField()
+    mem = models.FloatField()
+    disk = models.FloatField()
+    uptime = models.CharField(max_length=255)
     timestamp = models.DateTimeField(auto_now_add=True)
-    cpu_load = models.FloatField()
-    memory_usage = models.FloatField()
-    disk_usage = models.FloatField()
 
     def __str__(self):
-        return f"Metrics at {self.timestamp}"
+        return f"Server {self.server_id} - {self.timestamp}"
 
 class Incident(models.Model): #тут инциденты
+    server_id = models.IntegerField()
+    issue_type = models.CharField(max_length=50)
+    description = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    issue = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"Incident at {self.timestamp}: {self.issue}"
-
+        return f"Incident on server {self.server_id} - {self.issue_type}"
 
 
 """
