@@ -1,39 +1,37 @@
 import requests
 from celery import shared_task
-from .models import Machine, ResourceUsage
 from django.utils.timezone import now
 from datetime import timedelta
-from .models import ResourceUsage, Incident
-
+from .models import Incident
+import psutil
+from celery import shared_task
+from .models import ServerMetric, Incident
 
 @shared_task
 def fetch_and_store_metrics():
-    machines = Machine.objects.all()
-    for machine in machines:
-        response = requests.get(f'http://{machine.ip_address}/metrics')
-        if response.status_code == 200:
-            data = response.json()
-            ResourceUsage.objects.create(
-                machine=machine,
-                cpu=data['cpu'],
-                mem=float(data['mem'].replace('%', '')),
-                disk=float(data['disk'].replace('%', '')),
-                uptime=data['uptime']
-            )
+    cpu = psutil.cpu_percent(interval=1)
+    memory = psutil.virtual_memory().percent
+    disk = psutil.disk_usage('/').percent
+
+    metric = ServerMetric.objects.create(cpu_load=cpu, memory_usage=memory, disk_usage=disk)
+    
+    monitor_resources(metric.pk)
+
+    return f"Metrics recorded: CPU={cpu}, Memory={memory}, Disk={disk}"
 
 @shared_task
-def monitor_resources():
-    threshold = {'cpu': 85, 'mem': 90, 'disk': 95}
-    time_limits = {'cpu': 30, 'mem': 30, 'disk': 120}
+def monitor_resources(metric_id):
+    metric = ServerMetric.objects.get(pk=metric_id)
+    
+    if metric.cpu_load > 85:
+        Incident.objects.create(issue=f"CPU > 85%  : {metric.cpu_load}%")
+    if metric.memory_usage > 90:
+        Incident.objects.create(issue=f"Memory > 90%  : {metric.memory_usage}%")
+    if metric.disk_usage > 95:
+        Incident.objects.create(issue=f"Disk > 95%  : {metric.disk_usage}%")
 
-    for resource, limit in threshold.items():
-        recent_data = ResourceUsage.objects.filter(
-            timestamp__gte=now() - timedelta(minutes=time_limits[resource])
-        )
-        if recent_data.exists():
-            avg_value = sum(getattr(d, resource) for d in recent_data) / len(recent_data)
-            if avg_value > limit:
-                Incident.objects.create(machine=recent_data[0].machine, resource=resource, value=avg_value)
+    return "Monitoring complete"
+
 
 
 """

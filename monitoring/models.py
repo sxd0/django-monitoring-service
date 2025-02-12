@@ -1,25 +1,21 @@
 from django.db import models
 
-class Machine(models.Model): # инфо о серверах
-    name = models.CharField(max_length=100, unique=True)
-    ip_address = models.GenericIPAddressField(unique=True)
+class ServerMetric(models.Model): #хранит в себе собранные метрики
+    timestamp = models.DateTimeField(auto_now_add=True)
+    cpu_load = models.FloatField()
+    memory_usage = models.FloatField()
+    disk_usage = models.FloatField()
 
     def __str__(self):
-        return self.name
+        return f"Metrics at {self.timestamp}"
 
-class ResourceUsage(models.Model): # данные загрузки каждого сервера
-    machine = models.ForeignKey(Machine, on_delete=models.CASCADE)
-    cpu = models.FloatField()
-    mem = models.FloatField()
-    disk = models.FloatField()
-    uptime = models.CharField(max_length=50)
+class Incident(models.Model): #тут инциденты
     timestamp = models.DateTimeField(auto_now_add=True)
+    issue = models.CharField(max_length=255)
 
-class Incident(models.Model): # содержит в себе опасные сервера
-    machine = models.ForeignKey(Machine, on_delete=models.CASCADE)
-    resource = models.CharField(max_length=10)
-    value = models.FloatField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"Incident at {self.timestamp}: {self.issue}"
+
 
 
 """
