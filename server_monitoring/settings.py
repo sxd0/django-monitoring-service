@@ -86,7 +86,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'monitoring_db',
         'USER': 'root',
-        'PASSWORD': 'password',
+        'PASSWORD': '12345',
         'HOST': 'localhost', #db
         'PORT': '3306',
     }
