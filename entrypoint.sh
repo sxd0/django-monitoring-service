@@ -1,22 +1,22 @@
 #!/bin/sh
 
-echo "Waiting for MySQL..."
+echo "подождать mysql"
 while ! nc -z db 3306; do
   sleep 0.5
 done
-echo "MySQL started"
+echo "mysql стартанул"
 
-echo "Waiting for Redis..."
+echo "подождать редис"
 while ! nc -z redis 6379; do
   sleep 0.5
 done
-echo "Redis started"
+echo "редис запущен"
 
 if [ ! -f "$DB_APPLIED_MARKER" ]; then
-  echo "Applying database migrations..."
+  echo "миграции"
   python manage.py migrate
   touch "$DB_APPLIED_MARKER"
-  echo "Migrations applied"
+  echo "миграции применены"
 fi
 
 exec "$@"
