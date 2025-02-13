@@ -1,8 +1,8 @@
 # django-monitoring-service
 
-### Клонируйте себе репозиторий "git clone <repository-url>" "cd <repository-directory>"
+### Клонируйте себе репозиторий "git clone <https://github.com/sxd0/django-monitoring-service.git>"
 
-### Приложение запускается докером. Команд "docker-compose up --build"
+### Приложение запускается докером. Команд "docker-compose up --build" в корне
 
 ### Далее нужно подождать пока все сервисы запустятся
 
