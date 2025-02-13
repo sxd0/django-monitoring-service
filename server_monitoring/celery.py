@@ -18,4 +18,3 @@ app.conf.beat_schedule = {
         'schedule': crontab(minute='*/15'),
     },
 }
-app.conf.timezone = 'UTC'

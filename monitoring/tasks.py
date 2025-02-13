@@ -10,7 +10,7 @@ from django.utils import timezone
 def fetch_server_data():
     for server_id in range(1, 31):#30 серверов
         try:
-            response = requests.get(f'http://127.0.0.1:8000/api/server/{server_id}/status/', timeout=10)
+            response = requests.get(f'http://web:8000/api/server/{server_id}/status/', timeout=10)
             if response.status_code != 200:
                 print(f"Failed to fetch data for server {server_id}: {response.status_code}")
                 continue
